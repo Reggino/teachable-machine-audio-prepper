@@ -1,23 +1,20 @@
 import React from "react";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
-
-async function promiseMapSeries(array: any[], cb: (arg: any) => Promise<any>) {
-  const length = array.length;
-  const results = new Array(length);
-
-  for (let i = 0; i < length; ++i) {
-    results[i] = await cb(array[i]);
-  }
-
-  return results;
-}
+import promiseMapSeries from "./inc/promiseMapSeries";
 
 function App() {
+  const [progress, setProgress] = React.useState<{
+    finished: number;
+    selected: number;
+  }>();
+  const [error, setError] = React.useState<string>();
+
   const onChange = React.useCallback(async (e: any) => {
     const zip = new JSZip();
-    const sample = await promiseMapSeries(e.target.files, (file: File) => {
-      return new Promise<any>((resolve) => {
+    setProgress({ selected: e.target.files.length, finished: 0 });
+    promiseMapSeries(e.target.files, (file: File) => {
+      return new Promise<any>((resolve, reject) => {
         const reader = new FileReader();
         reader.addEventListener("load", async (event) => {
           if (
@@ -29,7 +26,13 @@ function App() {
           let c = new AudioContext({
             sampleRate: 44100,
           });
-          let b = await c.decodeAudioData(event.target.result);
+          let b: AudioBuffer;
+          try {
+            b = await c.decodeAudioData(event.target.result);
+          } catch (e) {
+            reject(e);
+            return;
+          }
           let freqDataQueue: any = [];
           let columnTruncateLength = 232;
           let sampleRate = 44100;
@@ -63,9 +66,17 @@ function App() {
           oac.startRendering();
           zip.file(file.name, file);
 
-          oac.oncomplete = (e) => {
+          oac.oncomplete = () => {
             source.disconnect(analyser);
             processor.disconnect(oac.destination);
+            setProgress((progress) =>
+              progress
+                ? {
+                    ...progress,
+                    finished: progress.finished + 1,
+                  }
+                : progress
+            );
             resolve({
               frequencyFrames: freqDataQueue,
               blob: null,
@@ -78,16 +89,44 @@ function App() {
         });
         reader.readAsArrayBuffer(file);
       });
-    });
-    zip.file("sample.json", JSON.stringify(sample));
-    zip.generateAsync({ type: "blob" }).then((content) => {
-      FileSaver.saveAs(content, "samples.zip");
-    });
+    })
+      .then((sample) => {
+        zip.file("sample.json", JSON.stringify(sample));
+        zip.generateAsync({ type: "blob" }).then((content) => {
+          FileSaver.saveAs(content, "samples.zip");
+        });
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+      });
   }, []);
+
+  const progressPercentage = progress
+    ? `${Math.round((progress.finished / progress.selected) * 100)}%`
+    : null;
+
+  if (error) {
+    return <h1 style={{ color: "red" }}>{error}</h1>;
+  }
 
   return (
     <div className="App">
-      <input type="file" id="input" multiple onChange={onChange} />
+      {progressPercentage ? (
+        <div style={{ border: "1px solid black" }}>
+          <div
+            style={{
+              backgroundColor: "grey",
+              height: 20,
+              width: progressPercentage,
+              textAlign: "center",
+            }}
+          >
+            {progressPercentage}
+          </div>
+        </div>
+      ) : (
+        <input type="file" id="input" multiple onChange={onChange} />
+      )}
     </div>
   );
 }
