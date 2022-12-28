@@ -125,7 +125,16 @@ function App() {
           </div>
         </div>
       ) : (
-        <input type="file" id="input" multiple onChange={onChange} />
+        <>
+          Please select .webm audio files
+          <input
+            type="file"
+            id="input"
+            multiple
+            onChange={onChange}
+            accept="audio/webm"
+          />
+        </>
       )}
     </div>
   );
