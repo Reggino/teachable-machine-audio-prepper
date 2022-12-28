@@ -78,12 +78,12 @@ function App() {
                 : progress
             );
             resolve({
-              frequencyFrames: freqDataQueue,
               blob: null,
-              startTime: 0,
-              endTime: b.duration,
-              recordingDuration: b.duration,
               blobFilePath: file.name,
+              endTime: b.duration,
+              frequencyFrames: freqDataQueue,
+              recordingDuration: b.duration,
+              startTime: 0,
             });
           };
         });
@@ -91,7 +91,7 @@ function App() {
       });
     })
       .then((sample) => {
-        zip.file("sample.json", JSON.stringify(sample));
+        zip.file("samples.json", JSON.stringify(sample));
         zip.generateAsync({ type: "blob" }).then((content) => {
           FileSaver.saveAs(content, "samples.zip");
         });
