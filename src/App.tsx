@@ -126,7 +126,7 @@ function App() {
         </div>
       ) : (
         <>
-          Please select .webm audio files
+          <div>Please select .webm audio files</div>
           <input
             type="file"
             id="input"
