@@ -23,8 +23,9 @@ function App() {
           ) {
             throw new Error("Missing result from FileReader");
           }
+          const sampleRate = 44100;
           let c = new AudioContext({
-            sampleRate: 44100,
+            sampleRate,
           });
           let b: AudioBuffer;
           try {
@@ -35,7 +36,6 @@ function App() {
           }
           let freqDataQueue: any = [];
           let columnTruncateLength = 232;
-          let sampleRate = 44100;
 
           let oac = new OfflineAudioContext({
             numberOfChannels: b.numberOfChannels,
@@ -81,7 +81,7 @@ function App() {
               blob: null,
               blobFilePath: file.name,
               endTime: b.duration,
-              frequencyFrames: freqDataQueue,
+              frequencyFrames: freqDataQueue.map((a: Float32Array) => [...a]),
               recordingDuration: b.duration,
               startTime: 0,
             });
